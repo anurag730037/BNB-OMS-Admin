@@ -24,16 +24,16 @@ const AddRetailer: React.FC = () => {
       try {
         const data = await getAllAreas();
         if (data.success) {
-          setAreasList(data.areas)
+          setAreasList(data.areas);
         }
       }
 
       catch (err) {
         toast.error("Failed to load areas");
       }
-    }
-  }
-    , [])
+    };
+    fetchAreas();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
