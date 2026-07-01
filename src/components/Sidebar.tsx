@@ -1,5 +1,5 @@
 import React from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
 import logo from "../assets/logoBNB.png";
 
@@ -11,7 +11,6 @@ type SidebarProps = {
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const { isDark } = useTheme();
   const location = useLocation();
-  const navigate = useNavigate();
 
   const menuItems = [
     {

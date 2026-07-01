@@ -38,12 +38,6 @@ type StatusRatio = {
   color: string;
 };
 
-type LowStockAlert = {
-  _id: string;
-  name: string;
-  totalWeight: number;
-};
-
 type DormantRetailer = {
   _id: string;
   shopName: string;
@@ -141,7 +135,6 @@ const Dashboard: React.FC = () => {
   const [pendingOrdersList, setPendingOrdersList] = useState<RecentOrder[]>([]);
   const [statusRatios, setStatusRatios] = useState<StatusRatio[]>([]);
   const [topRegions, setTopRegions] = useState<RegionItem[]>([]);
-  const [lowStockAlerts, setLowStockAlerts] = useState<LowStockAlert[]>([]);
   const [dormantRetailers, setDormantRetailers] = useState<DormantRetailer[]>([]);
   const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
   const [areaPackingLoads, setAreaPackingLoads] = useState<AreaPackingLoad[]>([]);
@@ -220,7 +213,6 @@ const Dashboard: React.FC = () => {
     // 5: Operational Insights (dormant, lowStock, areaPackingLoads)
     if (results[5].status === "fulfilled" && results[5].value.success) {
       setDormantRetailers(results[5].value.dormantRetailers || []);
-      setLowStockAlerts(results[5].value.lowStockAlerts || []);
       setAreaPackingLoads(results[5].value.areaPackingLoads || []);
     }
     setLoadingStates(prev => ({ ...prev, insights: false }));

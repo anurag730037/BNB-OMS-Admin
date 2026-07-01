@@ -165,11 +165,7 @@ const Orders: React.FC = () => {
     setShowExtraFilters(false);
   };
 
-  // Get filtered retailer shop name if list is not empty
-  const filteredShopName =
-    retailerIdFilter && orders.length > 0 && orders[0].retailerId
-      ? orders[0].retailerId.shopName
-      : undefined;
+
 
   return (
     <div className={`p-8 min-h-screen transition-colors duration-300 rounded-none ${isDark ? "bg-[#111111] text-brand-cream" : "bg-[#F9F7F2] text-brand-charcoal"

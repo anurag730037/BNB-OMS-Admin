@@ -5,7 +5,7 @@ export const getAllProducts = async (params?: { search?: string; categoryId?: st
     return response.data;
 }
 
-export const createProduct = async (data) => {
+export const createProduct = async (data: any) => {
     const response = await API.post("/product/create", data);
     return response.data;
 }
