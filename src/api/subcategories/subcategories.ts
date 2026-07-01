@@ -1,7 +1,7 @@
 import API from "../axios";
 
-export const getAllSubcategories = async () => {
-    const response = await API.get("/subcategory/all");
+export const getAllSubcategories = async (params?: { search?: string; categoryId?: string; isActive?: boolean }) => {
+    const response = await API.get("/subcategory/all", { params });
     return response.data;
 };
 

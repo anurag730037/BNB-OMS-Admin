@@ -4,6 +4,7 @@ import { useTheme } from "../context/ThemeContext";
 import { loginAdmin } from "../api/auth/auth";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 
 export const Login: React.FC = () => {
   const { login } = useAuth()
@@ -14,18 +15,31 @@ export const Login: React.FC = () => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const { isDark, toggleTheme } = useTheme();
+  const [loading, setLoading] = useState(false);
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); // Prevent page reload on form submit
+    if (loading) return; // Prevent double submissions
     try {
+
+      setLoading(true);
       const data = await loginAdmin({
         email, password
       })
 
-      login(data.token);
-      navigate("/dashboard");
+      if (data.success) {
+        login(data.token);
+        navigate("/dashboard");
+      }
+      else {
+        toast.error(data.message);
+      }
     } catch (error) {
       console.log(error);
+      toast.error("Something went wrong!");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -93,7 +107,7 @@ export const Login: React.FC = () => {
                 const parent = e.currentTarget.parentElement;
                 if (parent) {
                   const span = document.createElement('span');
-                  span.className = 'text-brand-maroon dark:text-brand-gold font-serif text-3xl tracking-widest';
+                  span.className = 'text-brand-maroon dark:text-brand-gold font-sans text-2xl font-extrabold tracking-widest';
                   span.innerText = 'B N B';
                   parent.appendChild(span);
                 }
@@ -102,7 +116,7 @@ export const Login: React.FC = () => {
           </div>
 
           {/* Refined Typography (Classic Serif + Geometric Sans Serif) */}
-          <h2 className={`font-serif text-2xl tracking-[0.15em] font-light uppercase ${isDark ? "text-brand-cream" : "text-[#3D0A0C]"
+          <h2 className={`font-sans text-2xl tracking-wider font-extrabold uppercase ${isDark ? "text-brand-cream" : "text-[#3D0A0C]"
             }`}>
             Balaji Namkeen
           </h2>
@@ -121,6 +135,7 @@ export const Login: React.FC = () => {
               type="email"
               required
               value={email}
+              disabled={loading}
               onChange={(e) => setEmail(e.target.value)}
               className={`w-full py-2.5 bg-transparent border-b text-sm transition-all duration-300 rounded-none focus:outline-none ${isDark
                 ? "border-[#333333] text-brand-cream placeholder-[#555555] focus:border-brand-gold"
@@ -140,6 +155,7 @@ export const Login: React.FC = () => {
               type={showPassword ? "text" : "password"}
               required
               value={password}
+              disabled={loading}
               onChange={(e) => setPassword(e.target.value)}
               className={`w-full py-2.5 pr-10 bg-transparent border-b text-sm transition-all duration-300 rounded-none focus:outline-none ${isDark
                 ? "border-[#333333] text-brand-cream placeholder-[#555555] focus:border-brand-gold"
@@ -197,7 +213,7 @@ export const Login: React.FC = () => {
               : "bg-brand-maroon border-brand-maroon text-brand-cream hover:bg-transparent hover:border-brand-maroon hover:text-brand-maroon"
               }`}
           >
-            Authenticate
+            {loading ? "Logging in..." : "Log in"}
           </button>
         </form>
 

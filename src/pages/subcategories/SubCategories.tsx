@@ -28,6 +28,12 @@ const SubCategories: React.FC = () => {
   const [categoriesList, setCategoriesList] = useState<CategoryDetail[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Search & Filter States
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [filterCategoryId, setFilterCategoryId] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState("");
+
   // Quick add state
   const [newName, setNewName] = useState("");
   const [selectedCategoryId, setSelectedCategoryId] = useState("");
@@ -37,15 +43,38 @@ const SubCategories: React.FC = () => {
   const [editingName, setEditingName] = useState("");
   const [editingCategoryId, setEditingCategoryId] = useState("");
 
+  // Fetch initial filters
+  useEffect(() => {
+    const fetchFilters = async () => {
+      try {
+        const catRes = await getAllCategories();
+        if (catRes.success) {
+          setCategoriesList(catRes.categories);
+        }
+      } catch (err) {
+        console.error("Failed to load categories", err);
+      }
+    };
+    fetchFilters();
+  }, []);
+
+  // Debounce search
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 450);
+    return () => clearTimeout(handler);
+  }, [search]);
+
   const fetchData = async () => {
     try {
       setLoading(true);
-      const catRes = await getAllCategories();
-      if (catRes.success) {
-        setCategoriesList(catRes.categories);
-      }
+      const params: any = {};
+      if (debouncedSearch.trim()) params.search = debouncedSearch;
+      if (filterCategoryId) params.categoryId = filterCategoryId;
+      if (selectedStatus !== "") params.isActive = selectedStatus;
 
-      const subRes = await getAllSubcategories();
+      const subRes = await getAllSubcategories(params);
       if (subRes.success) {
         setSubcategories(subRes.subcategories);
       }
@@ -58,7 +87,7 @@ const SubCategories: React.FC = () => {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [debouncedSearch, filterCategoryId, selectedStatus]);
 
   const handleAddSubcategory = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -126,7 +155,7 @@ const SubCategories: React.FC = () => {
     }`}>
       {/* Header */}
       <div className={`border-b pb-4 mb-6 ${isDark ? "border-[#222222]" : "border-[#E8E2D5]"}`}>
-        <h1 className="font-serif text-3xl uppercase tracking-[0.1em] font-light">Subcategories Management</h1>
+        <h1 className="font-sans text-2xl font-extrabold uppercase tracking-wider">Subcategories Management</h1>
         <p className={`text-xs mt-1 ${isDark ? "text-brand-gold" : "text-brand-maroon"}`}>
           Define detailed sub-classifications for products
         </p>
@@ -137,7 +166,7 @@ const SubCategories: React.FC = () => {
         <div className={`p-6 border rounded-none h-fit ${
           isDark ? "bg-[#181818] border-[#2A2A2A]" : "bg-white border-[#E8E2D5]"
         }`}>
-          <h2 className="font-serif text-lg uppercase tracking-wider mb-4">Quick Add Subcategory</h2>
+          <h2 className="font-sans text-xs uppercase font-extrabold tracking-wider mb-4">Quick Add Subcategory</h2>
           <form onSubmit={handleAddSubcategory} className="space-y-4">
             {/* Subcategory Name */}
             <div className="space-y-1">
@@ -193,6 +222,63 @@ const SubCategories: React.FC = () => {
 
         {/* Subcategories List Container */}
         <div className="lg:col-span-2 space-y-4">
+          {/* Search and Filters */}
+          <div className={`p-4 border flex flex-col sm:flex-row gap-4 items-center justify-between ${
+            isDark ? "bg-[#181818] border-[#2A2A2A]" : "bg-white border-[#E8E2D5]"
+          }`}>
+            <div className="w-full sm:w-1/2 relative">
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search subcategories..."
+                className={`w-full pl-9 pr-3 py-2 bg-transparent border text-xs uppercase tracking-wider transition-all duration-200 rounded-none focus:outline-none ${
+                  isDark
+                    ? "border-[#333333] text-brand-cream placeholder-[#555555] focus:border-brand-gold"
+                    : "border-[#D6CFC1] text-brand-charcoal placeholder-[#A29C8F] focus:border-brand-maroon"
+                }`}
+              />
+              <span className="absolute left-3 top-2.5 text-gray-400">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </span>
+            </div>
+
+            <div className="flex flex-wrap gap-2 items-center w-full sm:w-auto justify-end">
+              <select
+                value={filterCategoryId}
+                onChange={(e) => setFilterCategoryId(e.target.value)}
+                className={`px-3 py-2 bg-transparent border text-[10px] font-bold uppercase tracking-wider rounded-none focus:outline-none ${
+                  isDark
+                    ? "border-[#333333] text-brand-cream bg-[#181818] focus:border-brand-gold"
+                    : "border-[#D6CFC1] text-brand-charcoal bg-white focus:border-brand-maroon"
+                }`}
+              >
+                <option value="">All Categories</option>
+                {categoriesList.map((cat) => (
+                  <option key={cat._id} value={cat._id} className={isDark ? "bg-[#181818]" : "bg-white"}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={selectedStatus}
+                onChange={(e) => setSelectedStatus(e.target.value)}
+                className={`px-3 py-2 bg-transparent border text-[10px] font-bold uppercase tracking-wider rounded-none focus:outline-none ${
+                  isDark
+                    ? "border-[#333333] text-brand-cream bg-[#181818] focus:border-brand-gold"
+                    : "border-[#D6CFC1] text-brand-charcoal bg-white focus:border-brand-maroon"
+                }`}
+              >
+                <option value="">All Statuses</option>
+                <option value="true" className={isDark ? "bg-[#181818]" : "bg-white"}>Active</option>
+                <option value="false" className={isDark ? "bg-[#181818]" : "bg-white"}>Disabled</option>
+              </select>
+            </div>
+          </div>
+
           <div className={`border overflow-hidden rounded-none ${
             isDark ? "bg-[#181818] border-[#2A2A2A]" : "bg-white border-[#E8E2D5]"
           }`}>
@@ -257,10 +343,10 @@ const SubCategories: React.FC = () => {
                         <td className="p-4">
                           <span
                             onClick={() => handleToggleStatus(sub._id)}
-                            className={`px-2 py-1 text-[9px] font-bold select-none cursor-pointer transition-all duration-200 ${
+                            className={`px-3 py-1 text-[10px] font-extrabold uppercase tracking-widest select-none cursor-pointer hover:scale-[1.03] active:scale-95 transition-all duration-150 border rounded-full ${
                               sub.isActive
-                                ? "bg-green-900/20 text-green-400 border border-green-800/40 hover:bg-green-900/40"
-                                : "bg-red-900/20 text-red-400 border border-red-800/40 hover:bg-red-900/40"
+                                ? isDark ? "bg-green-500/10 text-green-400 border-green-500/25 hover:bg-green-500/20" : "bg-green-50 text-green-800 border-green-200 hover:bg-green-100"
+                                : isDark ? "bg-red-500/10 text-red-400 border-red-500/25 hover:bg-red-500/20" : "bg-red-50 text-red-800 border-red-200 hover:bg-red-100"
                             }`}
                             title="Click to toggle status"
                           >

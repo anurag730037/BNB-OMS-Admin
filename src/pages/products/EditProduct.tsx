@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useTheme } from "../../context/ThemeContext";
 import { getAllCategories } from "../../api/categories/categories";
 import { getAllSubcategories } from "../../api/subcategories/subcategories";
-import { createProduct } from "../../api/products/products";
+import { getProductById, updateProduct } from "../../api/products/products";
 import toast from "react-hot-toast";
 import axios from "axios";
 
-const AddProduct: React.FC = () => {
+const EditProduct: React.FC = () => {
   const { isDark } = useTheme();
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
 
   // Form states
   const [name, setName] = useState("");
@@ -18,17 +19,18 @@ const AddProduct: React.FC = () => {
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
   const [showPrice, setShowPrice] = useState(false);
-  const [availableSizes, setAvailableSizes] = useState<string[]>(["500gm", "1kg"]);
+  const [availableSizes, setAvailableSizes] = useState<string[]>([]);
   const [sizeInput, setSizeInput] = useState("");
 
   // Image Upload states
-  const [images, setImages] = useState<String[]>([]);
+  const [images, setImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
 
   // API Selection lists & Loading states
   const [categories, setCategories] = useState<any[]>([]);
   const [subCategories, setSubCategories] = useState<any[]>([]);
   const [loadingSelectors, setLoadingSelectors] = useState(true);
+  const [loadingProduct, setLoadingProduct] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
   // Fetch Category / Subcategory lists on mount
@@ -56,6 +58,43 @@ const AddProduct: React.FC = () => {
     fetchSelectors();
   }, []);
 
+  // Fetch Product details on mount/id change
+  useEffect(() => {
+    const fetchProductDetails = async () => {
+      if (!id) return;
+      try {
+        setLoadingProduct(true);
+        const res = await getProductById(id);
+        if (res.success && res.product) {
+          const prod = res.product;
+          setName(prod.name || "");
+          setCategoryId(
+            typeof prod.categoryId === "object" && prod.categoryId !== null 
+              ? prod.categoryId._id 
+              : prod.categoryId || ""
+          );
+          setSubCategoryId(
+            typeof prod.subCategoryId === "object" && prod.subCategoryId !== null 
+              ? prod.subCategoryId._id 
+              : prod.subCategoryId || ""
+          );
+          setDescription(prod.description || "");
+          setPrice(prod.price !== null ? String(prod.price) : "");
+          setShowPrice(prod.showPrice || false);
+          setAvailableSizes(prod.availableSizes || []);
+          setImages(prod.images || []);
+        } else {
+          toast.error("Failed to fetch product details");
+        }
+      } catch (error) {
+        toast.error("Error loading product");
+      } finally {
+        setLoadingProduct(false);
+      }
+    };
+    fetchProductDetails();
+  }, [id]);
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
@@ -74,15 +113,14 @@ const AddProduct: React.FC = () => {
     }
 
     setUploading(true);
-    const uploadingUrls: String[] = [...images];
+    const uploadedUrls: string[] = [...images];
 
     try {
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
 
-        // Validate file size under 5MB
         if (file.size > 5 * 1024 * 1024) {
-          toast.error(`Image ${file.name} exceeds 5MB limit.`);
+          toast.error(`File ${file.name} exceeds the 5MB size limit.`);
           continue;
         }
 
@@ -91,24 +129,27 @@ const AddProduct: React.FC = () => {
         formData.append("upload_preset", uploadPreset);
 
         const response = await axios.post(
-          `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, 
+          `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
           formData
         );
 
         if (response.data.secure_url) {
-          uploadingUrls.push(response.data.secure_url);
+          uploadedUrls.push(response.data.secure_url);
         }
       }
-
-      setImages(uploadingUrls);
-      toast.success("Images uploaded successfully");
+      setImages(uploadedUrls);
+      toast.success("Images uploaded successfully!");
     } catch (error) {
-      console.error(error);
-      toast.error("Failed to upload images");
+      console.error("Upload error:", error);
+      toast.error("Failed to upload one or more images.");
     } finally {
       setUploading(false);
       e.target.value = "";
     }
+  };
+
+  const handleRemoveImage = (indexToRemove: number) => {
+    setImages((prev) => prev.filter((_, index) => index !== indexToRemove));
   };
 
   // Filter subcategories that belong to the currently selected category
@@ -138,13 +179,9 @@ const AddProduct: React.FC = () => {
     setAvailableSizes((prev) => prev.filter((s) => s !== sizeToRemove));
   };
 
-  const handleRemoveImage = (indexToRemove: number) => {
-    setImages((prev) => prev.filter((_, index) => index !== indexToRemove));
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (submitting) return;
+    if (submitting || !id) return;
 
     if (!categoryId) {
       toast.error("Please select a product category");
@@ -164,12 +201,12 @@ const AddProduct: React.FC = () => {
         images
       };
 
-      const res = await createProduct(productPayload);
+      const res = await updateProduct(id, productPayload);
       if (res.success) {
-        toast.success(res.message || "Product created successfully!");
+        toast.success(res.message || "Product updated successfully!");
         navigate("/products");
       } else {
-        toast.error(res.message || "Failed to create product");
+        toast.error(res.message || "Failed to update product");
       }
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Failed to create product");
@@ -178,6 +215,8 @@ const AddProduct: React.FC = () => {
     }
   };
 
+  const isPageLoading = loadingSelectors || loadingProduct;
+
   return (
     <div className={`p-4 sm:p-8 min-h-screen transition-colors duration-300 rounded-none ${
       isDark ? "bg-[#111111] text-brand-cream" : "bg-[#F9F7F2] text-brand-charcoal"
@@ -185,9 +224,9 @@ const AddProduct: React.FC = () => {
       {/* Header with Back Button */}
       <div className="max-w-7xl mx-auto border-b pb-4 mb-6 sm:mb-8 flex items-center justify-between border-brand-maroon/20 dark:border-[#222222]">
         <div>
-          <h1 className="font-sans text-2xl font-extrabold uppercase tracking-wider">Add New Product</h1>
+          <h1 className="font-sans text-2xl font-extrabold uppercase tracking-wider">Edit Product</h1>
           <p className={`text-xs mt-1 ${isDark ? "text-brand-gold" : "text-brand-maroon"}`}>
-            Configure a new catalog item
+            Update catalog item configuration
           </p>
         </div>
         <button
@@ -202,9 +241,9 @@ const AddProduct: React.FC = () => {
         </button>
       </div>
 
-      {loadingSelectors ? (
+      {isPageLoading ? (
         <div className="max-w-7xl mx-auto p-12 text-center text-xs uppercase tracking-widest font-bold">
-          Loading form details...
+          Loading product configuration...
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 items-start">
@@ -549,7 +588,7 @@ const AddProduct: React.FC = () => {
                     : "bg-brand-maroon border-brand-maroon text-brand-cream hover:bg-transparent hover:border-brand-maroon hover:text-brand-maroon cursor-pointer"
               }`}
             >
-              {submitting ? "Creating..." : "Add Product"}
+              {submitting ? "Saving..." : "Save Product"}
             </button>
           </div>
           
@@ -559,4 +598,4 @@ const AddProduct: React.FC = () => {
   );
 };
 
-export default AddProduct;
+export default EditProduct;

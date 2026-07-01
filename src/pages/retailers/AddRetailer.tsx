@@ -64,7 +64,7 @@ const AddRetailer: React.FC = () => {
       <div className={`border-b pb-4 mb-8 flex items-center justify-between ${isDark ? "border-[#222222]" : "border-[#E8E2D5]"
         }`}>
         <div>
-          <h1 className="font-serif text-3xl uppercase tracking-[0.1em] font-light">New Retailer</h1>
+          <h1 className="font-sans text-2xl font-extrabold uppercase tracking-wider">New Retailer</h1>
           <p className={`text-xs mt-1 ${isDark ? "text-brand-gold" : "text-brand-maroon"}`}>
             Register a new retailer into the database
           </p>

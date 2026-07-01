@@ -1,7 +1,7 @@
 import API from "../axios";
 
-export const getAllCategories = async () => {
-    const response = await API.get("/category/all");
+export const getAllCategories = async (params?: { search?: string; isActive?: boolean }) => {
+    const response = await API.get("/category/all", { params });
     return response.data;
 };
 

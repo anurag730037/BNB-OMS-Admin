@@ -1,7 +1,7 @@
 import API from "../axios";
 
-export const getAllAreas = async () => {
-    const response = await API.get("/area/all");
+export const getAllAreas = async (params?: { search?: string }) => {
+    const response = await API.get("/area/all", { params });
     return response.data;
 };
 

@@ -1,5 +1,5 @@
 import React from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
 import logo from "../assets/logoBNB.png";
 
@@ -11,6 +11,7 @@ type SidebarProps = {
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const { isDark } = useTheme();
   const location = useLocation();
+  const navigate = useNavigate();
 
   const menuItems = [
     {
@@ -83,7 +84,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     <>
       {/* Mobile Sidebar Overlay */}
       {isOpen && (
-        <div 
+        <div
           onClick={onClose}
           className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden transition-all duration-300"
         />
@@ -91,24 +92,21 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
       {/* Main Sidebar Drawer */}
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-50 w-64 border-r transition-all duration-300 lg:translate-x-0 rounded-none flex flex-col justify-between ${
-          isOpen ? "translate-x-0" : "-translate-x-full"
-        } ${
-          isDark 
-            ? "bg-[#161616] border-[#2A2A2A] text-brand-cream" 
-            : "bg-[#FFFFFF] border-[#E8E2D5] text-brand-charcoal"
-        }`}
+        className={`fixed top-0 bottom-0 left-0 z-50 w-64 border-r transition-all duration-300 lg:translate-x-0 flex flex-col ${isOpen ? "translate-x-0" : "-translate-x-full"
+          } ${isDark
+            ? "bg-[#111111] border-[#1E1E1E] text-brand-cream"
+            : "bg-[#FDFCF9] border-[#E8E2D5] text-brand-charcoal"
+          }`}
       >
-        <div>
+        {/* Top section: Logo + Nav */}
+        <div className="flex-1 overflow-y-auto">
           {/* Logo Brand Box */}
-          <div className={`p-6 border-b flex items-center justify-between ${
-            isDark ? "border-[#2A2A2A]" : "border-[#E8E2D5]"
-          }`}>
+          <div className="px-5 pt-6 pb-5 flex items-center justify-between">
             <Link to="/dashboard" onClick={onClose} className="flex items-center gap-3">
-              <img 
-                src={logo} 
-                alt="BNB Logo" 
-                className="h-10 w-auto object-contain select-none"
+              <img
+                src={logo}
+                alt="BNB Logo"
+                className="h-11 w-11 object-contain select-none rounded-lg"
                 onError={(e) => {
                   e.currentTarget.style.display = 'none';
                   const parent = e.currentTarget.parentElement;
@@ -121,23 +119,21 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                 }}
               />
               <div>
-                <h2 className="font-serif text-sm tracking-widest font-bold uppercase leading-tight">
-                  Balaji Namkeen
+                <h2 className="font-sans text-[13px] tracking-wide font-extrabold uppercase leading-tight">
+                  Balaji<br />Namkeen
                 </h2>
-                <p className={`text-[8px] font-bold tracking-[0.2em] uppercase ${
-                  isDark ? "text-brand-gold" : "text-brand-maroon"
-                }`}>
+                <p className={`text-[9px] font-bold tracking-[0.25em] uppercase mt-0.5 ${isDark ? "text-brand-gold" : "text-brand-maroon"
+                  }`}>
                   Bhandar
                 </p>
               </div>
             </Link>
 
             {/* Mobile close button */}
-            <button 
-              onClick={onClose} 
-              className={`p-1 lg:hidden cursor-pointer ${
-                isDark ? "text-[#777777] hover:text-brand-cream" : "text-[#8E8677] hover:text-brand-charcoal"
-              }`}
+            <button
+              onClick={onClose}
+              className={`p-1.5 lg:hidden cursor-pointer rounded-lg transition-colors ${isDark ? "text-gray-500 hover:text-brand-cream hover:bg-white/5" : "text-gray-400 hover:text-brand-charcoal hover:bg-black/5"
+                }`}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
@@ -146,39 +142,54 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           </div>
 
           {/* Navigation Links */}
-          <nav className="p-4 space-y-1">
-            {menuItems.map((item) => {
-              const isActive = location.pathname === item.path;
-              return (
-                <Link
-                  key={item.name}
-                  to={item.path}
-                  onClick={onClose}
-                  className={`flex items-center gap-3.5 px-4 py-3 text-xs tracking-wider uppercase font-bold border-l-2 transition-all duration-200 rounded-none ${
-                    isActive
+          <nav className="px-3 mt-1">
+            <div className="space-y-0.5">
+              {menuItems.map((item) => {
+                const isActive = location.pathname === item.path;
+                return (
+                  <Link
+                    key={item.name}
+                    to={item.path}
+                    onClick={onClose}
+                    className={`flex items-center gap-3 px-4 py-2.5 text-[16px] font-semibold rounded-lg transition-all duration-200 ${isActive
                       ? isDark
-                        ? "bg-[#222222]/30 border-brand-gold text-brand-gold"
-                        : "bg-brand-maroon/5 border-brand-maroon text-brand-maroon"
+                        ? "bg-brand-maroon text-white"
+                        : "bg-brand-maroon text-white"
                       : isDark
-                        ? "border-transparent text-brand-beige/50 hover:text-brand-cream hover:bg-[#222222]/10"
-                        : "border-transparent text-[#7A7263] hover:text-brand-charcoal hover:bg-[#F9F7F2]"
-                  }`}
-                >
-                  <span className={isActive ? "" : isDark ? "text-[#555555]" : "text-[#A29C8F]"}>
-                    {item.icon}
-                  </span>
-                  {item.name}
-                </Link>
-              );
-            })}
+                        ? "text-gray-400 hover:text-brand-cream hover:bg-white/[0.04]"
+                        : "text-[#6B6358] hover:text-brand-charcoal hover:bg-[#F3EFE7]"
+                      }`}
+                  >
+                    <span className={isActive ? "" : isDark ? "text-gray-600" : "text-[#A9A093]"}>
+                      {item.icon}
+                    </span>
+                    {item.name}
+                  </Link>
+                );
+              })}
+            </div>
           </nav>
         </div>
 
-        {/* Sidebar Footer */}
-        <div className={`p-4 border-t text-[10px] uppercase font-bold tracking-widest text-center ${
-          isDark ? "border-[#2A2A2A] text-[#444444]" : "border-[#E8E2D5] text-[#B5AF9F]"
-        }`}>
-          © {new Date().getFullYear()} BNB
+        {/* Bottom Section: CTA Card + Footer */}
+        <div className="mt-auto px-4 pb-4">
+          {/* Grow your business CTA card */}
+
+
+          {/* Footer */}
+          <div className={`mt-3 pt-3 border-t flex items-center justify-between text-[11px] font-semibold ${isDark ? "border-[#1E1E1E] text-gray-600" : "border-[#E8E2D5] text-[#B5AF9F]"
+            }`}>
+            <span>© {new Date().getFullYear()} BNB</span>
+            <button
+              className={`p-1 rounded transition-colors cursor-pointer ${isDark ? "hover:bg-white/5 text-gray-600 hover:text-gray-400" : "hover:bg-black/5 text-[#B5AF9F] hover:text-[#7A7263]"
+                }`}
+              title="Collapse sidebar"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-4 h-4">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M18.75 19.5l-7.5-7.5 7.5-7.5m-6 15L5.25 12l7.5-7.5" />
+              </svg>
+            </button>
+          </div>
         </div>
       </aside>
     </>

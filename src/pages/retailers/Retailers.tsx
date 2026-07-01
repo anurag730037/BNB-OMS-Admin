@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useTheme } from "../../context/ThemeContext";
 import toast from "react-hot-toast";
 import { getAllRetailers, toggleRetailerStatus } from "../../api/retailers/retailers";
+import { getAllAreas } from "../../api/area/areas";
 
 type AreaDetail = {
   _id: string;
@@ -25,10 +26,44 @@ const Retailers: React.FC = () => {
   const [retailers, setRetailers] = useState<RetailerItem[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Search & Filter States
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [selectedArea, setSelectedArea] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState("");
+
+  const [areasList, setAreasList] = useState<AreaDetail[]>([]);
+
+  // Fetch areas on mount
+  useEffect(() => {
+    const fetchAreas = async () => {
+      try {
+        const areaRes = await getAllAreas();
+        if (areaRes.success) setAreasList(areaRes.areas);
+      } catch (err) {
+        console.error("Failed to load areas list", err);
+      }
+    };
+    fetchAreas();
+  }, []);
+
+  // Debounce search
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 450);
+    return () => clearTimeout(handler);
+  }, [search]);
+
   const fetchRetailers = async () => {
     try {
       setLoading(true);
-      const data = await getAllRetailers();
+      const params: any = {};
+      if (debouncedSearch.trim()) params.search = debouncedSearch;
+      if (selectedArea) params.area = selectedArea;
+      if (selectedStatus !== "") params.isActive = selectedStatus;
+
+      const data = await getAllRetailers(params);
       if (data.success) {
         setRetailers(data.retailers);
       }
@@ -41,7 +76,7 @@ const Retailers: React.FC = () => {
 
   useEffect(() => {
     fetchRetailers();
-  }, []);
+  }, [debouncedSearch, selectedArea, selectedStatus]);
 
   const handleToggleStatus = async (id: string) => {
     try {
@@ -69,7 +104,7 @@ const Retailers: React.FC = () => {
         isDark ? "border-[#222222]" : "border-[#E8E2D5]"
       }`}>
         <div>
-          <h1 className="font-serif text-3xl uppercase tracking-[0.1em] font-light">Retailer Network</h1>
+          <h1 className="font-sans text-2xl font-extrabold uppercase tracking-wider">Retailer Network</h1>
           <p className={`text-xs mt-1 ${isDark ? "text-brand-gold" : "text-brand-maroon"}`}>
             Manage registered retail partners
           </p>
@@ -84,6 +119,65 @@ const Retailers: React.FC = () => {
         >
           Add Retailer
         </button>
+      </div>
+
+      {/* Search and Filters controls */}
+      <div className={`p-4 border mb-6 flex flex-col md:flex-row gap-4 items-center justify-between ${
+        isDark ? "bg-[#181818] border-[#2A2A2A]" : "bg-white border-[#E8E2D5]"
+      }`}>
+        <div className="w-full md:w-1/3 relative">
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by shop, owner, phone..."
+            className={`w-full pl-9 pr-3 py-2 bg-transparent border text-xs uppercase tracking-wider transition-all duration-200 rounded-none focus:outline-none ${
+              isDark
+                ? "border-[#333333] text-brand-cream placeholder-[#555555] focus:border-brand-gold"
+                : "border-[#D6CFC1] text-brand-charcoal placeholder-[#A29C8F] focus:border-brand-maroon"
+            }`}
+          />
+          <span className="absolute left-3 top-2.5 text-gray-400">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </span>
+        </div>
+
+        <div className="flex flex-wrap gap-4 items-center w-full md:w-auto justify-end">
+          {/* Area Filter */}
+          <select
+            value={selectedArea}
+            onChange={(e) => setSelectedArea(e.target.value)}
+            className={`px-3 py-2 bg-transparent border text-[10px] font-bold uppercase tracking-wider rounded-none focus:outline-none ${
+              isDark
+                ? "border-[#333333] text-brand-cream bg-[#181818] focus:border-brand-gold"
+                : "border-[#D6CFC1] text-brand-charcoal bg-white focus:border-brand-maroon"
+            }`}
+          >
+            <option value="">All Areas</option>
+            {areasList.map((area) => (
+              <option key={area._id} value={area._id} className={isDark ? "bg-[#181818]" : "bg-white"}>
+                {area.name}
+              </option>
+            ))}
+          </select>
+
+          {/* Status Filter */}
+          <select
+            value={selectedStatus}
+            onChange={(e) => setSelectedStatus(e.target.value)}
+            className={`px-3 py-2 bg-transparent border text-[10px] font-bold uppercase tracking-wider rounded-none focus:outline-none ${
+              isDark
+                ? "border-[#333333] text-brand-cream bg-[#181818] focus:border-brand-gold"
+                : "border-[#D6CFC1] text-brand-charcoal bg-white focus:border-brand-maroon"
+            }`}
+          >
+            <option value="">All Statuses</option>
+            <option value="true" className={isDark ? "bg-[#181818]" : "bg-white"}>Active</option>
+            <option value="false" className={isDark ? "bg-[#181818]" : "bg-white"}>Disabled</option>
+          </select>
+        </div>
       </div>
 
       {/* List Table container */}
@@ -118,14 +212,21 @@ const Retailers: React.FC = () => {
                   <td className="p-4 font-semibold">{retailer.shopName}</td>
                   <td className="p-4">{retailer.ownerName}</td>
                   <td className="p-4">{retailer.phone}</td>
-                  <td className="p-4">{retailer.area?.name || "N/A"}</td>
+                  <td className="p-4">
+                    <span className={`px-2.5 py-0.5 text-[9px] font-bold border rounded-full ${isDark
+                        ? "bg-brand-maroon/20 text-brand-beige border-brand-maroon/30"
+                        : "bg-brand-maroon/5 text-brand-maroon border-brand-maroon/15"
+                      }`}>
+                      {retailer.area?.name || "N/A"}
+                    </span>
+                  </td>
                   <td className="p-4">
                     <span 
                       onClick={() => handleToggleStatus(retailer._id)}
-                      className={`px-2 py-1 text-[9px] font-bold select-none cursor-pointer transition-all duration-200 ${
+                      className={`px-3 py-1 text-[10px] font-extrabold uppercase tracking-widest select-none cursor-pointer hover:scale-[1.03] active:scale-95 transition-all duration-150 border rounded-full ${
                         retailer.isActive 
-                          ? "bg-green-900/20 text-green-400 border border-green-800/40 hover:bg-green-900/40" 
-                          : "bg-red-900/20 text-red-400 border border-red-800/40 hover:bg-red-900/40"
+                          ? isDark ? "bg-green-500/10 text-green-400 border-green-500/25 hover:bg-green-500/20" : "bg-green-50 text-green-800 border-green-200 hover:bg-green-100" 
+                          : isDark ? "bg-red-500/10 text-red-400 border-red-500/25 hover:bg-red-500/20" : "bg-red-50 text-red-800 border-red-200 hover:bg-red-100"
                       }`}
                       title="Click to toggle status"
                     >

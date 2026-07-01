@@ -14,8 +14,8 @@ export const registerRetailer = async (data: RetailerPayload) => {
     return response.data;
 };
 
-export const getAllRetailers = async () => {
-    const response = await API.get("/retailer");
+export const getAllRetailers = async (params?: { search?: string; area?: string; isActive?: boolean }) => {
+    const response = await API.get("/retailer", { params });
     return response.data;
 };
 

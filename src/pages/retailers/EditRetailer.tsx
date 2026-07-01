@@ -91,7 +91,7 @@ const EditRetailer: React.FC = () => {
         isDark ? "border-[#222222]" : "border-[#E8E2D5]"
       }`}>
         <div>
-          <h1 className="font-serif text-3xl uppercase tracking-[0.1em] font-light">Edit Retailer</h1>
+          <h1 className="font-sans text-2xl font-extrabold uppercase tracking-wider">Edit Retailer</h1>
           <p className={`text-xs mt-1 ${isDark ? "text-brand-gold" : "text-brand-maroon"}`}>
             Update retailer network partner details
           </p>
