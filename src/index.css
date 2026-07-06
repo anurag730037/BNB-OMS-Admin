@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-brand-maroon: #7B1113;
   --color-brand-burgundy: #5A0D0F;

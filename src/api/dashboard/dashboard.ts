@@ -34,3 +34,8 @@ export const getTopProducts = async () => {
   const response = await API.get("/dashboard/top-products");
   return response.data;
 };
+
+export const getTopRetailers = async () => {
+  const response = await API.get("/dashboard/top-retailers");
+  return response.data;
+};
