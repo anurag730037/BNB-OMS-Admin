@@ -23,6 +23,73 @@ type productItem = {
   images?: string[];
 }
 
+export const getCategoryStyles = (categoryName: string, isDark: boolean) => {
+  const name = categoryName ? categoryName.trim().toLowerCase() : "";
+  
+  const styles = [
+    // Emerald / Greenish
+    {
+      light: "bg-emerald-50 text-emerald-800 border-emerald-200/60",
+      dark: "bg-emerald-950/30 text-emerald-300 border-emerald-900/40"
+    },
+    // Amber / Yellow / Brownish
+    {
+      light: "bg-amber-50 text-amber-800 border-amber-200/60",
+      dark: "bg-amber-950/30 text-amber-300 border-amber-900/40"
+    },
+    // Indigo / Blueish
+    {
+      light: "bg-indigo-50 text-indigo-800 border-indigo-200/60",
+      dark: "bg-indigo-950/30 text-indigo-300 border-indigo-900/40"
+    },
+    // Rose / Reddish
+    {
+      light: "bg-rose-50 text-rose-800 border-rose-200/60",
+      dark: "bg-rose-950/30 text-rose-300 border-rose-900/40"
+    },
+    // Teal / Cyan
+    {
+      light: "bg-teal-50 text-teal-800 border-teal-200/60",
+      dark: "bg-teal-950/30 text-teal-300 border-teal-900/40"
+    },
+    // Violet / Purple
+    {
+      light: "bg-violet-50 text-violet-800 border-violet-200/60",
+      dark: "bg-violet-950/30 text-violet-300 border-violet-900/40"
+    },
+    // Orange
+    {
+      light: "bg-orange-50 text-orange-800 border-orange-200/60",
+      dark: "bg-orange-950/30 text-orange-300 border-orange-900/40"
+    },
+    // Cyan
+    {
+      light: "bg-cyan-50 text-cyan-800 border-cyan-200/60",
+      dark: "bg-cyan-950/30 text-cyan-300 border-cyan-900/40"
+    },
+    // Fuchsia
+    {
+      light: "bg-fuchsia-50 text-fuchsia-800 border-fuchsia-200/60",
+      dark: "bg-fuchsia-950/30 text-fuchsia-300 border-fuchsia-900/40"
+    }
+  ];
+
+  if (!name) {
+    return isDark
+      ? "bg-brand-maroon/20 text-brand-beige border-brand-maroon/30"
+      : "bg-brand-maroon/5 text-brand-maroon border-brand-maroon/15";
+  }
+
+  // Generate a simple hash from the category name
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % styles.length;
+  
+  return isDark ? styles[index].dark : styles[index].light;
+};
+
 const Products: React.FC = () => {
   const { isDark } = useTheme();
   const navigate = useNavigate();
@@ -255,10 +322,9 @@ const Products: React.FC = () => {
                   <td className="p-4 font-semibold">{product.name}</td>
                   <td className="p-4">
                     <div className="flex flex-col sm:flex-row sm:items-center gap-1.5">
-                      <span className={`px-2.5 py-0.5 text-[9px] font-bold border rounded-full ${isDark
-                          ? "bg-brand-maroon/20 text-brand-beige border-brand-maroon/30"
-                          : "bg-brand-maroon/5 text-brand-maroon border-brand-maroon/15"
-                        }`}>
+                      <span className={`px-2.5 py-0.5 text-[9px] font-bold border rounded-full ${
+                        getCategoryStyles(product.categoryId?.name || "", isDark)
+                      }`}>
                         {product.categoryId?.name || "N/A"}
                       </span>
                       {product.subCategoryId && (
