@@ -505,7 +505,13 @@ const Orders: React.FC = () => {
                                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-yellow-500"></span>
                                 </span>
                               )}
-                              <span>{new Date(order.createdAt).toLocaleDateString()}</span>
+                              <span>
+                                {new Date(order.createdAt).toLocaleDateString("en-US", {
+                                  day: "numeric",
+                                  month: "short",
+                                  year: "numeric",
+                                })}
+                              </span>
                             </div>
                             {order.status === "pending" && (
                               <span className="inline-block w-fit px-1.5 py-0.5 text-[8px] font-extrabold bg-yellow-500 text-black animate-pulse tracking-wider">
@@ -638,7 +644,13 @@ const Orders: React.FC = () => {
                       <p className="text-[10px] text-gray-500 lowercase mt-0.5">{order.retailerId?.ownerName}</p>
                     </div>
                     <div className="text-right">
-                      <span className="text-[10px] block opacity-80">{new Date(order.createdAt).toLocaleDateString()}</span>
+                      <span className="text-[10px] block opacity-80">
+                        {new Date(order.createdAt).toLocaleDateString("en-US", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </span>
                       <span className={`inline-block px-2 py-0.5 text-[8px] font-bold border mt-1.5 rounded-full ${isDark
                           ? "bg-brand-maroon/20 text-brand-beige border-brand-maroon/30"
                           : "bg-brand-maroon/5 text-brand-maroon border-brand-maroon/15"

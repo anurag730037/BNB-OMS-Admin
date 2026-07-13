@@ -277,7 +277,19 @@ const OrderDetail: React.FC = () => {
                     <div className="grid grid-cols-2 gap-4 text-xs">
                         <div>
                             <span className="text-[10px] uppercase tracking-wider font-semibold opacity-60 block">Order Date</span>
-                            <span>{new Date(order.createdAt).toLocaleString()}</span>
+                            <span>
+                                {new Date(order.createdAt).toLocaleDateString("en-US", {
+                                    day: "numeric",
+                                    month: "long",
+                                    year: "numeric",
+                                })}{" "}
+                                at{" "}
+                                {new Date(order.createdAt).toLocaleTimeString("en-US", {
+                                    hour: "numeric",
+                                    minute: "2-digit",
+                                    hour12: true,
+                                })}
+                            </span>
                         </div>
                         <div>
                             <span className="text-[10px] uppercase tracking-wider font-semibold opacity-60 block">Total Weight</span>

@@ -506,6 +506,19 @@ const Dashboard: React.FC = () => {
                     <span className="text-gray-400 text-[10px] block mt-0.5 font-mono">
                       {order.totalkg} kg total weight
                     </span>
+                    <span className="text-gray-500 text-[9px] block mt-0.5">
+                      {new Date(order.createdAt).toLocaleDateString("en-US", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })}{" "}
+                      at{" "}
+                      {new Date(order.createdAt).toLocaleTimeString("en-US", {
+                        hour: "numeric",
+                        minute: "2-digit",
+                        hour12: true,
+                      })}
+                    </span>
                   </div>
                   <span className={`text-[10px] font-black uppercase flex-shrink-0 text-brand-gold`}>
                     Approve →
