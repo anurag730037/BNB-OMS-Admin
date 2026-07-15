@@ -20,6 +20,7 @@ type OrderItem = {
 
 type OrderDetail = {
   _id: string;
+  orderId?: string;
   retailerId: {
     _id: string;
     shopName: string;
@@ -513,6 +514,11 @@ const Orders: React.FC = () => {
                                 })}
                               </span>
                             </div>
+                            {order.orderId && (
+                              <span className="text-[10px] font-mono font-bold text-brand-gold">
+                                {order.orderId}
+                              </span>
+                            )}
                             {order.status === "pending" && (
                               <span className="inline-block w-fit px-1.5 py-0.5 text-[8px] font-extrabold bg-yellow-500 text-black animate-pulse tracking-wider">
                                 NEW ORDER ACTION REQUIRED

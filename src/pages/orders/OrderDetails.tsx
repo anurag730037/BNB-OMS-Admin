@@ -19,6 +19,7 @@ type OrderItem = {
 
 type OrderDetailType = {
     _id: string;
+    orderId?: string;
     retailerId: {
         _id: string;
         shopName: string;
@@ -175,6 +176,11 @@ const OrderDetail: React.FC = () => {
                     <h1 className="font-sans text-2xl font-extrabold uppercase tracking-wider">
                         Order Details
                     </h1>
+                    {order.orderId && (
+                        <p className="text-sm font-sans font-bold text-brand-gold uppercase tracking-wider mt-0.5">
+                            Order ID: {order.orderId}
+                        </p>
+                    )}
                     <p className={`text-xs mt-1 font-mono opacity-60`}>
                         ID: {order._id}
                     </p>
