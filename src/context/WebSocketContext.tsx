@@ -56,7 +56,7 @@ export const WebSocketProvider = ({ children }: { children: ReactNode }) => {
 
                     // 🛍️ Show a beautiful real-time popup notification
 
-                    toast.success((t) => (
+                    toast.success(
                         <div className="flex flex-col gap-1">
                             <span className="font-bold text-gray-800">🛍️ New Order Received!</span>
                             <span className="text-xs text-gray-500">
@@ -65,11 +65,12 @@ export const WebSocketProvider = ({ children }: { children: ReactNode }) => {
                             <span className="text-xs font-semibold text-indigo-600">
                                 Total Weight: {data.order.totalkg} kg
                             </span>
-                        </div>
-                    ), {
-                        duration: 6000,
-                        position: "top-right"
-                    });
+                        </div>,
+                        {
+                            duration: 6000,
+                            position: "top-right"
+                        }
+                    );
                 }
 
             } catch (error) {
