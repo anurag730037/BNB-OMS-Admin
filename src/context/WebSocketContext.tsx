@@ -54,7 +54,7 @@ export const WebSocketProvider = ({ children }: { children: ReactNode }) => {
 
                     audio.play().catch((err) => console.log("Sound playback blocked by browser:", err));
 
-                    // 🛍️ Show a beautiful real-time popup notification
+                    // 🛍️ Show a beautiful real-time popup notification (real-time order alert)
 
                     toast.success(
                         <div className="flex flex-col gap-1">
