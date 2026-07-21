@@ -19,3 +19,8 @@ export const toggleSubcategoryStatus = async (subcategoryId: string) => {
     const response = await API.patch(`/subcategory/toggle/${subcategoryId}`);
     return response.data;
 };
+
+export const deleteSubcategory = async (subcategoryId: string) => {
+    const response = await API.delete(`/subcategory/delete/${subcategoryId}`);
+    return response.data;
+};

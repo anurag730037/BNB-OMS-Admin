@@ -4,6 +4,7 @@ import { useTheme } from "../../context/ThemeContext";
 import toast from "react-hot-toast";
 import { getAllRetailers, toggleRetailerStatus } from "../../api/retailers/retailers";
 import { getAllAreas } from "../../api/area/areas";
+import ConfirmationModal from "../../components/ConfirmationModal";
 
 type AreaDetail = {
   _id: string;
@@ -33,6 +34,21 @@ const Retailers: React.FC = () => {
   const [selectedStatus, setSelectedStatus] = useState("");
 
   const [areasList, setAreasList] = useState<AreaDetail[]>([]);
+
+  // Confirmation Modal State
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string | React.ReactNode;
+    confirmText?: string;
+    isDanger?: boolean;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+  });
 
   // Fetch areas on mount
   useEffect(() => {
@@ -78,21 +94,43 @@ const Retailers: React.FC = () => {
     fetchRetailers();
   }, [debouncedSearch, selectedArea, selectedStatus]);
 
-  const handleToggleStatus = async (id: string) => {
-    try {
-      const res = await toggleRetailerStatus(id);
-      if (res.success) {
-        toast.success(res.message || "Status updated successfully");
-        // Update local state without full reload for better UX
-        setRetailers((prev) =>
-          prev.map((r) =>
-            r._id === id ? { ...r, isActive: res.retailer.isActive } : r
-          )
-        );
-      }
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to toggle status");
-    }
+  const handleToggleStatus = (retailer: RetailerItem) => {
+    const nextStatus = !retailer.isActive;
+    const actionText = nextStatus ? "Activate" : "Disable";
+
+    setConfirmModal({
+      isOpen: true,
+      title: `Confirm ${actionText} Retailer`,
+      message: (
+        <span>
+          Are you sure you want to {actionText.toLowerCase()}{" "}
+          <strong className="font-bold text-brand-gold">{retailer.shopName}</strong> ({retailer.ownerName})?
+          {!nextStatus && (
+            <span className="block mt-1 text-red-500 font-semibold">
+              Disabling this retailer will prevent them from logging in or placing new orders.
+            </span>
+          )}
+        </span>
+      ),
+      confirmText: `${actionText} Retailer`,
+      isDanger: !nextStatus,
+      onConfirm: async () => {
+        setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        try {
+          const res = await toggleRetailerStatus(retailer._id);
+          if (res.success) {
+            toast.success(res.message || "Status updated successfully");
+            setRetailers((prev) =>
+              prev.map((r) =>
+                r._id === retailer._id ? { ...r, isActive: res.retailer.isActive } : r
+              )
+            );
+          }
+        } catch (err: any) {
+          toast.error(err.response?.data?.message || "Failed to toggle status");
+        }
+      },
+    });
   };
 
   return (
@@ -222,7 +260,7 @@ const Retailers: React.FC = () => {
                   </td>
                   <td className="p-4">
                     <span 
-                      onClick={() => handleToggleStatus(retailer._id)}
+                      onClick={() => handleToggleStatus(retailer)}
                       className={`px-3 py-1 text-[10px] font-extrabold uppercase tracking-widest select-none cursor-pointer hover:scale-[1.03] active:scale-95 transition-all duration-150 border rounded-full ${
                         retailer.isActive 
                           ? isDark ? "bg-green-500/10 text-green-400 border-green-500/25 hover:bg-green-500/20" : "bg-green-50 text-green-800 border-green-200 hover:bg-green-100" 
@@ -261,6 +299,17 @@ const Retailers: React.FC = () => {
           </table>
         )}
       </div>
+
+      {/* Safety Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText={confirmModal.confirmText}
+        isDanger={confirmModal.isDanger}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };

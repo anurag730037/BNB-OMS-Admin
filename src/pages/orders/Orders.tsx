@@ -5,6 +5,7 @@ import { getAllOrders, updateOrderStatus } from "../../api/orders/orders";
 import { getAllAreas } from "../../api/area/areas";
 import { getAllRetailers } from "../../api/retailers/retailers";
 import toast from "react-hot-toast";
+import ConfirmationModal from "../../components/ConfirmationModal";
 
 type ProductDetail = {
   _id: string;
@@ -76,6 +77,21 @@ const Orders: React.FC = () => {
 
   // Row expansion state
   const [expandedOrders, setExpandedOrders] = useState<Record<string, boolean>>({});
+
+  // Confirmation modal state
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string | React.ReactNode;
+    confirmText?: string;
+    isDanger?: boolean;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+  });
 
   const toggleOrderExpand = (orderId: string) => {
     setExpandedOrders((prev) => ({
@@ -149,19 +165,36 @@ const Orders: React.FC = () => {
     fetchOrders();
   }, [retailerIdFilter, activeTab, debouncedSearch, areaId, startDate, endDate]);
 
-  const handleStatusChange = async (orderId: string, newStatus: string) => {
-    try {
-      const res = await updateOrderStatus(orderId, newStatus);
-      if (res.success) {
-        toast.success(res.message || "Order status updated");
-        // Update local state reactive UX
-        setOrders((prev) =>
-          prev.map((o) => (o._id === orderId ? { ...o, status: res.order.status } : o))
-        );
-      }
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to update order status");
-    }
+  const handleStatusChange = (orderId: string, newStatus: string) => {
+    const targetOrder = orders.find((o) => o._id === orderId);
+    if (!targetOrder || targetOrder.status === newStatus) return;
+
+    setConfirmModal({
+      isOpen: true,
+      title: "Confirm Order Status Change",
+      message: (
+        <span>
+          Are you sure you want to update status for shop{" "}
+          <strong className="font-bold text-brand-gold">{targetOrder.retailerId?.shopName || "order"}</strong> from{" "}
+          <strong className="uppercase font-bold text-brand-gold">{targetOrder.status}</strong> to{" "}
+          <strong className="uppercase font-bold text-brand-gold">{newStatus}</strong>?
+        </span>
+      ),
+      confirmText: "Update Status",
+      isDanger: newStatus === "cancelled",
+      onConfirm: async () => {
+        setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        try {
+          const res = await updateOrderStatus(orderId, newStatus);
+          if (res.success) {
+            toast.success(res.message || "Order status updated");
+            await fetchOrders();
+          }
+        } catch (err: any) {
+          toast.error(err.response?.data?.message || "Failed to update order status");
+        }
+      },
+    });
   };
 
   const handleClearFilter = () => {
@@ -811,6 +844,17 @@ const Orders: React.FC = () => {
           </>
         )}
       </div>
+
+      {/* Safety Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText={confirmModal.confirmText}
+        isDanger={confirmModal.isDanger}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };

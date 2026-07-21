@@ -14,6 +14,7 @@ import EditRetailer from "./pages/retailers/EditRetailer";
 import AddProduct from "./pages/products/AddProduct";
 import EditProduct from "./pages/products/EditProduct";
 import Areas from "./pages/areas/Areas";
+import Support from "./pages/support/Support";
 import { Toaster } from "react-hot-toast";
 
 function App() {
@@ -39,6 +40,7 @@ function App() {
             <Route path="/categories" element={<Categories />} />
             <Route path="/subcategories" element={<SubCategories />} />
             <Route path="/areas" element={<Areas />} />
+            <Route path="/support" element={<Support />} />
           </Route>
         </Route>
       </Routes>

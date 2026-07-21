@@ -8,6 +8,7 @@ import {
   deleteCategory,
   toggleCategoryStatus
 } from "../../api/categories/categories";
+import ConfirmationModal from "../../components/ConfirmationModal";
 
 type CategoryItem = {
   _id: string;
@@ -30,6 +31,21 @@ const Categories: React.FC = () => {
   // Inline editing states
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
+
+  // Confirmation Modal State
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string | React.ReactNode;
+    confirmText?: string;
+    isDanger?: boolean;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+  });
 
   // Debounce search
   useEffect(() => {
@@ -100,34 +116,68 @@ const Categories: React.FC = () => {
     }
   };
 
-  const handleToggleStatus = async (id: string) => {
-    try {
-      const res = await toggleCategoryStatus(id);
-      if (res.success) {
-        toast.success(res.message || "Status updated");
-        setCategories((prev) =>
-          prev.map((c) =>
-            c._id === id ? { ...c, isActive: res.category.isActive } : c
-          )
-        );
-      }
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to toggle status");
-    }
+  const handleToggleStatus = (cat: CategoryItem) => {
+    const nextStatus = !cat.isActive;
+    const actionText = nextStatus ? "Activate" : "Disable";
+
+    setConfirmModal({
+      isOpen: true,
+      title: `Confirm ${actionText} Category`,
+      message: (
+        <span>
+          Are you sure you want to {actionText.toLowerCase()}{" "}
+          <strong className="font-bold text-brand-gold">{cat.name}</strong>?
+        </span>
+      ),
+      confirmText: `${actionText} Category`,
+      isDanger: !nextStatus,
+      onConfirm: async () => {
+        setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        try {
+          const res = await toggleCategoryStatus(cat._id);
+          if (res.success) {
+            toast.success(res.message || "Status updated");
+            setCategories((prev) =>
+              prev.map((c) =>
+                c._id === cat._id ? { ...c, isActive: res.category.isActive } : c
+              )
+            );
+          }
+        } catch (err: any) {
+          toast.error(err.response?.data?.message || "Failed to toggle status");
+        }
+      },
+    });
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm("Are you sure you want to delete this category?")) return;
-
-    try {
-      const res = await deleteCategory(id);
-      if (res.success) {
-        toast.success("Category deleted successfully!");
-        fetchCategories();
-      }
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to delete category");
-    }
+  const handleDelete = (cat: CategoryItem) => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Confirm Delete Category",
+      message: (
+        <span>
+          Are you sure you want to permanently delete{" "}
+          <strong className="font-bold text-red-500">{cat.name}</strong>?
+          <span className="block mt-1 text-xs opacity-70">
+            Deleting this category may affect linked products and subcategories. This action cannot be undone.
+          </span>
+        </span>
+      ),
+      confirmText: "Delete Category",
+      isDanger: true,
+      onConfirm: async () => {
+        setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        try {
+          const res = await deleteCategory(cat._id);
+          if (res.success) {
+            toast.success("Category deleted successfully!");
+            fetchCategories();
+          }
+        } catch (err: any) {
+          toast.error(err.response?.data?.message || "Failed to delete category");
+        }
+      },
+    });
   };
 
   return (
@@ -260,7 +310,7 @@ const Categories: React.FC = () => {
                         </td>
                         <td className="p-4">
                           <span
-                            onClick={() => handleToggleStatus(cat._id)}
+                            onClick={() => handleToggleStatus(cat)}
                             className={`px-3 py-1 text-[10px] font-extrabold uppercase tracking-widest select-none cursor-pointer hover:scale-[1.03] active:scale-95 transition-all duration-150 border rounded-full ${
                               cat.isActive
                                 ? isDark ? "bg-green-500/10 text-green-400 border-green-500/25 hover:bg-green-500/20" : "bg-green-50 text-green-800 border-green-200 hover:bg-green-100"
@@ -308,7 +358,7 @@ const Categories: React.FC = () => {
                                 Edit
                               </button>
                               <button
-                                onClick={() => handleDelete(cat._id)}
+                                onClick={() => handleDelete(cat)}
                                 className={`px-3 py-1.5 text-[9px] uppercase tracking-wider font-bold border transition-all duration-200 rounded-none cursor-pointer ${
                                   isDark
                                     ? "bg-transparent border-[#2A2A2A] text-red-400 hover:border-red-600 hover:text-red-500"
@@ -329,6 +379,17 @@ const Categories: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Safety Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText={confirmModal.confirmText}
+        isDanger={confirmModal.isDanger}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };

@@ -6,8 +6,10 @@ import {
   getAllSubcategories,
   createSubcategory,
   updateSubcategory,
-  toggleSubcategoryStatus
+  toggleSubcategoryStatus,
+  deleteSubcategory
 } from "../../api/subcategories/subcategories";
+import ConfirmationModal from "../../components/ConfirmationModal";
 
 type CategoryDetail = {
   _id: string;
@@ -42,6 +44,21 @@ const SubCategories: React.FC = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
   const [editingCategoryId, setEditingCategoryId] = useState("");
+
+  // Confirmation Modal State
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string | React.ReactNode;
+    confirmText?: string;
+    isDanger?: boolean;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+  });
 
   // Fetch initial filters
   useEffect(() => {
@@ -133,20 +150,66 @@ const SubCategories: React.FC = () => {
     }
   };
 
-  const handleToggleStatus = async (id: string) => {
-    try {
-      const res = await toggleSubcategoryStatus(id);
-      if (res.success) {
-        toast.success(res.message || "Status updated");
-        setSubcategories((prev) =>
-          prev.map((s) =>
-            s._id === id ? { ...s, isActive: res.subcategory.isActive } : s
-          )
-        );
-      }
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to toggle status");
-    }
+  const handleToggleStatus = (sub: SubcategoryItem) => {
+    const nextStatus = !sub.isActive;
+    const actionText = nextStatus ? "Activate" : "Disable";
+
+    setConfirmModal({
+      isOpen: true,
+      title: `Confirm ${actionText} Subcategory`,
+      message: (
+        <span>
+          Are you sure you want to {actionText.toLowerCase()}{" "}
+          <strong className="font-bold text-brand-gold">{sub.name}</strong>?
+        </span>
+      ),
+      confirmText: `${actionText} Subcategory`,
+      isDanger: !nextStatus,
+      onConfirm: async () => {
+        setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        try {
+          const res = await toggleSubcategoryStatus(sub._id);
+          if (res.success) {
+            toast.success(res.message || "Status updated");
+            setSubcategories((prev) =>
+              prev.map((s) =>
+                s._id === sub._id ? { ...s, isActive: res.subcategory.isActive } : s
+              )
+            );
+          }
+        } catch (err: any) {
+          toast.error(err.response?.data?.message || "Failed to toggle status");
+        }
+      },
+    });
+  };
+
+  const handleDeleteSubcategory = (sub: SubcategoryItem) => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Confirm Delete Subcategory",
+      message: (
+        <span>
+          Are you sure you want to permanently delete{" "}
+          <strong className="font-bold text-red-500">{sub.name}</strong>?
+          <span className="block mt-1 text-xs opacity-70">This action cannot be undone.</span>
+        </span>
+      ),
+      confirmText: "Delete Subcategory",
+      isDanger: true,
+      onConfirm: async () => {
+        setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        try {
+          const res = await deleteSubcategory(sub._id);
+          if (res.success) {
+            toast.success(res.message || "Subcategory deleted successfully");
+            fetchData();
+          }
+        } catch (err: any) {
+          toast.error(err.response?.data?.message || "Failed to delete subcategory");
+        }
+      },
+    });
   };
 
   return (
@@ -342,7 +405,7 @@ const SubCategories: React.FC = () => {
                         </td>
                         <td className="p-4">
                           <span
-                            onClick={() => handleToggleStatus(sub._id)}
+                            onClick={() => handleToggleStatus(sub)}
                             className={`px-3 py-1 text-[10px] font-extrabold uppercase tracking-widest select-none cursor-pointer hover:scale-[1.03] active:scale-95 transition-all duration-150 border rounded-full ${
                               sub.isActive
                                 ? isDark ? "bg-green-500/10 text-green-400 border-green-500/25 hover:bg-green-500/20" : "bg-green-50 text-green-800 border-green-200 hover:bg-green-100"
@@ -389,6 +452,12 @@ const SubCategories: React.FC = () => {
                               >
                                 Edit
                               </button>
+                              <button
+                                onClick={() => handleDeleteSubcategory(sub)}
+                                className="px-3 py-1.5 text-[9px] uppercase tracking-wider font-bold border border-red-500/30 text-red-500 hover:bg-red-600 hover:text-white transition-all duration-200 rounded-none cursor-pointer"
+                              >
+                                Delete
+                              </button>
                             </>
                           )}
                         </td>
@@ -401,6 +470,17 @@ const SubCategories: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Safety Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText={confirmModal.confirmText}
+        isDanger={confirmModal.isDanger}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };
