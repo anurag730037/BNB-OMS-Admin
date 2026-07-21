@@ -18,6 +18,14 @@ type OrderItem = {
   notes?: string;
 };
 
+type StatusHistoryEntry = {
+  _id?: string;
+  fromStatus: string | null;
+  toStatus: string;
+  changedAt: string;
+  note?: string;
+};
+
 type OrderDetail = {
   _id: string;
   orderId?: string;
@@ -35,6 +43,7 @@ type OrderDetail = {
   adminNote?: string;
   totalkg: number;
   createdAt: string;
+  statusHistory?: StatusHistoryEntry[];
 };
 
 const Orders: React.FC = () => {
@@ -598,27 +607,64 @@ const Orders: React.FC = () => {
                       {expandedOrders[order._id] && (
                         <tr className={isDark ? "bg-[#151515]" : "bg-[#F9F7F2]/40"}>
                           <td colSpan={7} className="p-4 border-b border-inherit">
-                            <div className="pl-6 py-2">
-                              <h4 className="font-sans text-xs uppercase font-extrabold tracking-wider mb-3 text-brand-gold">Items Breakdown</h4>
-                              <div className={`border overflow-hidden rounded-none max-w-2xl ${isDark ? "bg-[#181818] border-[#2A2A2A]" : "bg-white border-[#E8E2D5]"}`}>
-                                <table className="w-full text-left text-[10px] uppercase tracking-wider font-sans border-collapse">
-                                  <thead>
-                                    <tr className={`border-b ${isDark ? "border-[#2A2A2A] bg-[#222222]/30" : "border-[#E8E2D5] bg-[#F9F7F2]/50"}`}>
-                                      <th className="p-3 font-bold">Product Name</th>
-                                      <th className="p-3 font-bold w-32">Packet Size</th>
-                                      <th className="p-3 font-bold text-right pr-6 w-36">Quantity (Kg)</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody>
-                                    {order.items.map((item, idx) => (
-                                      <tr key={idx} className={`border-b transition-colors duration-150 last:border-b-0 ${isDark ? "border-[#222222] hover:bg-[#222222]/10" : "border-[#F2ECE0] hover:bg-[#F9F7F2]/30"}`}>
-                                        <td className="p-3 font-semibold normal-case">{item.productId?.name || "Deleted Product"}</td>
-                                        <td className="p-3 font-mono">{item.packetSize}</td>
-                                        <td className="p-3 text-right pr-6 font-mono font-bold text-brand-gold">{item.quantityKg} kg</td>
+                            <div className="pl-6 py-2 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                              <div>
+                                <h4 className="font-sans text-xs uppercase font-extrabold tracking-wider mb-3 text-brand-gold">Items Breakdown</h4>
+                                <div className={`border overflow-hidden rounded-none ${isDark ? "bg-[#181818] border-[#2A2A2A]" : "bg-white border-[#E8E2D5]"}`}>
+                                  <table className="w-full text-left text-[10px] uppercase tracking-wider font-sans border-collapse">
+                                    <thead>
+                                      <tr className={`border-b ${isDark ? "border-[#2A2A2A] bg-[#222222]/30" : "border-[#E8E2D5] bg-[#F9F7F2]/50"}`}>
+                                        <th className="p-3 font-bold">Product Name</th>
+                                        <th className="p-3 font-bold w-32">Packet Size</th>
+                                        <th className="p-3 font-bold text-right pr-6 w-36">Quantity (Kg)</th>
                                       </tr>
-                                    ))}
-                                  </tbody>
-                                </table>
+                                    </thead>
+                                    <tbody>
+                                      {order.items.map((item, idx) => (
+                                        <tr key={idx} className={`border-b transition-colors duration-150 last:border-b-0 ${isDark ? "border-[#222222] hover:bg-[#222222]/10" : "border-[#F2ECE0] hover:bg-[#F9F7F2]/30"}`}>
+                                          <td className="p-3 font-semibold normal-case">{item.productId?.name || "Deleted Product"}</td>
+                                          <td className="p-3 font-mono">{item.packetSize}</td>
+                                          <td className="p-3 text-right pr-6 font-mono font-bold text-brand-gold">{item.quantityKg} kg</td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </div>
+
+                              <div>
+                                <h4 className="font-sans text-xs uppercase font-extrabold tracking-wider mb-3 text-brand-gold">Status History & Updates</h4>
+                                <div className={`p-3 border rounded-none text-[10px] space-y-2 ${isDark ? "bg-[#181818] border-[#2A2A2A]" : "bg-white border-[#E8E2D5]"}`}>
+                                  {order.statusHistory && order.statusHistory.length > 0 ? (
+                                    order.statusHistory.map((h, hIdx) => (
+                                      <div key={hIdx} className="flex items-center justify-between border-b pb-1.5 last:border-b-0 last:pb-0 border-inherit">
+                                        <div className="flex items-center gap-1.5">
+                                          {h.fromStatus ? (
+                                            <>
+                                              <span className="opacity-60">{h.fromStatus}</span>
+                                              <span className="text-brand-gold font-bold">➔</span>
+                                              <span className="font-bold uppercase">{h.toStatus}</span>
+                                            </>
+                                          ) : (
+                                            <span className="font-bold text-green-500">📦 Order Received</span>
+                                          )}
+                                        </div>
+                                        <span className="font-mono opacity-60">
+                                          {new Date(h.changedAt).toLocaleDateString("en-US", { day: "numeric", month: "short" })}{" "}
+                                          {new Date(h.changedAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })}
+                                        </span>
+                                      </div>
+                                    ))
+                                  ) : (
+                                    <div className="flex items-center justify-between">
+                                      <span className="font-bold text-green-500">📦 Order Received</span>
+                                      <span className="font-mono opacity-60">
+                                        {new Date(order.createdAt).toLocaleDateString("en-US", { day: "numeric", month: "short" })}{" "}
+                                        {new Date(order.createdAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })}
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           </td>
@@ -683,16 +729,45 @@ const Orders: React.FC = () => {
                     </div>
 
                     {expandedOrders[order._id] && (
-                      <div className="text-[10px] opacity-80 pt-3 border-t border-inherit space-y-1.5">
-                        <p className="font-bold text-[9px] uppercase tracking-wider opacity-60">Items Breakdown:</p>
-                        <ul className="space-y-1 font-mono pl-2">
-                          {order.items.map((item, idx) => (
-                            <li key={idx} className="flex justify-between gap-4">
-                              <span className="truncate">• {item.productId?.name || "Deleted Product"} ({item.packetSize})</span>
-                              <span className="font-bold flex-shrink-0">{item.quantityKg} kg</span>
-                            </li>
-                          ))}
-                        </ul>
+                      <div className="text-[10px] opacity-80 pt-3 border-t border-inherit space-y-3">
+                        <div>
+                          <p className="font-bold text-[9px] uppercase tracking-wider opacity-60 mb-1">Items Breakdown:</p>
+                          <ul className="space-y-1 font-mono pl-2">
+                            {order.items.map((item, idx) => (
+                              <li key={idx} className="flex justify-between gap-4">
+                                <span className="truncate">• {item.productId?.name || "Deleted Product"} ({item.packetSize})</span>
+                                <span className="font-bold flex-shrink-0">{item.quantityKg} kg</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        <div>
+                          <p className="font-bold text-[9px] uppercase tracking-wider opacity-60 mb-1 text-brand-gold">Status Updates Log:</p>
+                          <div className="space-y-1 pl-2 font-sans">
+                            {order.statusHistory && order.statusHistory.length > 0 ? (
+                              order.statusHistory.map((h, hIdx) => (
+                                <div key={hIdx} className="flex justify-between items-center text-[9px]">
+                                  <span>
+                                    {h.fromStatus ? `${h.fromStatus} ➔ ${h.toStatus}` : "📦 Order Received"}
+                                  </span>
+                                  <span className="font-mono opacity-60">
+                                    {new Date(h.changedAt).toLocaleDateString("en-US", { day: "numeric", month: "short" })}{" "}
+                                    {new Date(h.changedAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })}
+                                  </span>
+                                </div>
+                              ))
+                            ) : (
+                              <div className="flex justify-between items-center text-[9px]">
+                                <span>📦 Order Received</span>
+                                <span className="font-mono opacity-60">
+                                  {new Date(order.createdAt).toLocaleDateString("en-US", { day: "numeric", month: "short" })}{" "}
+                                  {new Date(order.createdAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>

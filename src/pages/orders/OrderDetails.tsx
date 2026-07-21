@@ -17,6 +17,14 @@ type OrderItem = {
     notes?: string;
 };
 
+type StatusHistoryEntry = {
+    _id?: string;
+    fromStatus: string | null;
+    toStatus: string;
+    changedAt: string;
+    note?: string;
+};
+
 type OrderDetailType = {
     _id: string;
     orderId?: string;
@@ -32,6 +40,7 @@ type OrderDetailType = {
     adminNote?: string;
     totalkg: number;
     createdAt: string;
+    statusHistory?: StatusHistoryEntry[];
 };
 
 const OrderDetail: React.FC = () => {
@@ -329,6 +338,120 @@ const OrderDetail: React.FC = () => {
                             )
                         )}
                     </div>
+                </div>
+            </div>
+
+            {/* Status History & Updates Timeline Card */}
+            <div className={`p-5 border mb-6 ${isDark ? "bg-[#181818] border-[#2A2A2A]" : "bg-white border-[#E8E2D5]"}`}>
+                <h2 className="font-sans text-xs uppercase font-extrabold tracking-wider mb-4 border-b pb-2 flex items-center justify-between">
+                    <span>Order Status History & Activity Log</span>
+                    <span className="text-[10px] font-mono opacity-60 font-semibold normal-case">
+                        {order.statusHistory && order.statusHistory.length > 0
+                            ? `${order.statusHistory.length} event(s) recorded`
+                            : "1 event recorded"}
+                    </span>
+                </h2>
+
+                <div className="relative pl-6 space-y-5 before:absolute before:left-2.5 before:top-2.5 before:bottom-2.5 before:w-0.5 before:bg-[#2A2A2A]/20 dark:before:bg-[#2A2A2A]">
+                    {order.statusHistory && order.statusHistory.length > 0 ? (
+                        order.statusHistory.map((history, idx) => {
+                            const getBadgeStyle = (st: string) => {
+                                switch (st) {
+                                    case "pending":
+                                        return isDark ? "bg-yellow-500/10 border-yellow-500/30 text-yellow-500" : "bg-yellow-50 text-yellow-800 border-yellow-200";
+                                    case "approved":
+                                        return isDark ? "bg-blue-500/10 border-blue-500/30 text-blue-400" : "bg-blue-50 text-blue-800 border-blue-200";
+                                    case "packed":
+                                        return isDark ? "bg-purple-500/10 border-purple-500/30 text-purple-400" : "bg-purple-50 text-purple-800 border-purple-200";
+                                    case "delivered":
+                                        return isDark ? "bg-green-500/10 border-green-500/30 text-green-400" : "bg-green-50 text-green-800 border-green-200";
+                                    case "cancelled":
+                                        return isDark ? "bg-red-500/10 border-red-500/30 text-red-400" : "bg-red-50 text-red-800 border-red-200";
+                                    default:
+                                        return "bg-gray-500/10 text-gray-400 border-gray-500/30";
+                                }
+                            };
+
+                            const isLatest = idx === order.statusHistory!.length - 1;
+
+                            return (
+                                <div key={idx} className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                                    {/* Circle node indicator */}
+                                    <div className={`absolute -left-6 top-1 sm:top-1.5 w-3.5 h-3.5 rounded-full border-2 transition-all ${
+                                        isLatest
+                                            ? "bg-brand-gold border-brand-gold ring-4 ring-brand-gold/20"
+                                            : isDark ? "bg-[#181818] border-[#444]" : "bg-white border-[#BBB]"
+                                    }`} />
+
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        {history.fromStatus ? (
+                                            <>
+                                                <span className="font-semibold opacity-60">Status changed from</span>
+                                                <span className={`px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wider border rounded-full ${getBadgeStyle(history.fromStatus)}`}>
+                                                    {history.fromStatus}
+                                                </span>
+                                                <span className="font-bold text-brand-gold text-sm">➔</span>
+                                                <span className={`px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wider border rounded-full ${getBadgeStyle(history.toStatus)}`}>
+                                                    {history.toStatus}
+                                                </span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <span className="font-extrabold text-green-500 uppercase tracking-wider">📦 Order Placed & Received</span>
+                                                <span className={`px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wider border rounded-full ${getBadgeStyle(history.toStatus)}`}>
+                                                    {history.toStatus}
+                                                </span>
+                                            </>
+                                        )}
+                                        {history.note && (
+                                            <span className="text-[11px] opacity-70 italic font-mono">({history.note})</span>
+                                        )}
+                                    </div>
+
+                                    <div className="font-mono text-[10px] opacity-70 whitespace-nowrap bg-black/5 dark:bg-white/5 px-2.5 py-1 rounded border border-inherit">
+                                        📅 {new Date(history.changedAt).toLocaleDateString("en-US", {
+                                            day: "numeric",
+                                            month: "short",
+                                            year: "numeric",
+                                        })}{" "}
+                                        at{" "}
+                                        {new Date(history.changedAt).toLocaleTimeString("en-US", {
+                                            hour: "numeric",
+                                            minute: "2-digit",
+                                            hour12: true,
+                                        })}
+                                    </div>
+                                </div>
+                            );
+                        })
+                    ) : (
+                        <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                            <div className="absolute -left-6 top-1 w-3.5 h-3.5 rounded-full border-2 bg-brand-gold border-brand-gold ring-4 ring-brand-gold/20" />
+                            <div className="flex items-center gap-2">
+                                <span className="font-extrabold text-green-500 uppercase tracking-wider">📦 Order Received</span>
+                                <span className={`px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wider border rounded-full ${
+                                    order.status === "pending"
+                                        ? isDark ? "bg-yellow-500/10 border-yellow-500/30 text-yellow-500" : "bg-yellow-50 text-yellow-800 border-yellow-200"
+                                        : isDark ? "bg-green-500/10 border-green-500/30 text-green-400" : "bg-green-50 text-green-800 border-green-200"
+                                }`}>
+                                    {order.status}
+                                </span>
+                            </div>
+                            <div className="font-mono text-[10px] opacity-70 whitespace-nowrap bg-black/5 dark:bg-white/5 px-2.5 py-1 rounded border border-inherit">
+                                📅 {new Date(order.createdAt).toLocaleDateString("en-US", {
+                                    day: "numeric",
+                                    month: "short",
+                                    year: "numeric",
+                                })}{" "}
+                                at{" "}
+                                {new Date(order.createdAt).toLocaleTimeString("en-US", {
+                                    hour: "numeric",
+                                    minute: "2-digit",
+                                    hour12: true,
+                                })}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 
