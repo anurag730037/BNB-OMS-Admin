@@ -34,3 +34,8 @@ export const updateRetailer = async (retailerId: string, data: Partial<RetailerP
     return response.data;
 };
 
+export const resetRetailerPassword = async (retailerId: string, newPassword: string) => {
+    const response = await API.patch(`/retailer/${retailerId}/reset-password`, { newPassword });
+    return response.data;
+};
+

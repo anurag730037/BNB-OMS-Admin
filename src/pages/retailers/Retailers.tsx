@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../../context/ThemeContext";
 import toast from "react-hot-toast";
-import { getAllRetailers, toggleRetailerStatus } from "../../api/retailers/retailers";
+import { getAllRetailers, toggleRetailerStatus, resetRetailerPassword } from "../../api/retailers/retailers";
 import { getAllAreas } from "../../api/area/areas";
 import ConfirmationModal from "../../components/ConfirmationModal";
 
@@ -49,6 +49,12 @@ const Retailers: React.FC = () => {
     message: "",
     onConfirm: () => {},
   });
+
+  // Password Reset Modal State
+  const [resetModalRetailer, setResetModalRetailer] = useState<RetailerItem | null>(null);
+  const [newPasswordInput, setNewPasswordInput] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [isSubmittingPassword, setIsSubmittingPassword] = useState(false);
 
   // Fetch areas on mount
   useEffect(() => {
@@ -128,6 +134,57 @@ const Retailers: React.FC = () => {
           }
         } catch (err: any) {
           toast.error(err.response?.data?.message || "Failed to toggle status");
+        }
+      },
+    });
+  };
+
+  const handleOpenPasswordModal = (retailer: RetailerItem) => {
+    setResetModalRetailer(retailer);
+    setNewPasswordInput("");
+    setPasswordError("");
+  };
+
+  const handlePasswordModalSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetModalRetailer) return;
+    if (!newPasswordInput || newPasswordInput.length < 6) {
+      setPasswordError("New password must be at least 6 characters long.");
+      return;
+    }
+
+    const target = resetModalRetailer;
+    setResetModalRetailer(null);
+
+    setConfirmModal({
+      isOpen: true,
+      title: "⚠️ Warning: Force Password Reset",
+      message: (
+        <span>
+          Are you sure you want to reset password for{" "}
+          <strong className="text-brand-gold font-bold">{target.shopName}</strong> ({target.ownerName})?
+          <span className="block mt-2 font-bold text-red-500">
+            ⚠️ IMPORTANT WARNING: Resetting password will immediately force logout the retailer from their mobile app.
+          </span>
+          They will need to log back in using this newly assigned password.
+        </span>
+      ),
+      confirmText: "Reset & Logout Retailer",
+      isDanger: true,
+      onConfirm: async () => {
+        setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        try {
+          setIsSubmittingPassword(true);
+          const res = await resetRetailerPassword(target._id, newPasswordInput);
+          if (res.success) {
+            toast.success(res.message || "Password reset successfully! Retailer has been logged out.");
+          } else {
+            toast.error(res.message || "Failed to reset password");
+          }
+        } catch (err: any) {
+          toast.error(err.response?.data?.message || "Failed to reset password");
+        } finally {
+          setIsSubmittingPassword(false);
         }
       },
     });
@@ -273,6 +330,13 @@ const Retailers: React.FC = () => {
                   </td>
                   <td className="p-4 text-right pr-6 space-x-2">
                     <button
+                      onClick={() => handleOpenPasswordModal(retailer)}
+                      className="px-2.5 py-1 text-[9px] font-bold border border-orange-500/40 text-orange-500 hover:bg-orange-500 hover:text-white transition-all duration-200 rounded-none cursor-pointer"
+                      title="Reset Password (rare action)"
+                    >
+                      Password
+                    </button>
+                    <button
                       onClick={() => navigate(`/retailers/edit/${retailer._id}`)}
                       className={`px-2.5 py-1 text-[9px] font-bold border transition-all duration-200 rounded-none cursor-pointer ${
                         isDark 
@@ -299,6 +363,78 @@ const Retailers: React.FC = () => {
           </table>
         )}
       </div>
+
+      {/* Reset Password Input Modal */}
+      {resetModalRetailer && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm"
+            onClick={() => setResetModalRetailer(null)}
+          />
+          <div className={`relative w-full max-w-md border shadow-2xl p-6 z-10 ${
+            isDark ? "bg-[#181818] border-[#2A2A2A] text-brand-cream" : "bg-white border-[#E8E2D5] text-brand-charcoal"
+          }`}>
+            <div className="absolute top-0 left-0 right-0 h-1 bg-orange-500" />
+            <h3 className="font-sans text-sm font-extrabold uppercase tracking-wider mb-2">
+              🔑 Reset Retailer Password
+            </h3>
+            <p className="text-xs opacity-70 mb-4 font-sans leading-relaxed">
+              Enter a new password for <strong className="text-brand-gold">{resetModalRetailer.shopName}</strong> ({resetModalRetailer.ownerName}).
+            </p>
+
+            <form onSubmit={handlePasswordModalSubmit} className="space-y-4">
+              <div className="space-y-1">
+                <label className="block text-[10px] font-bold uppercase tracking-wider opacity-80">
+                  New Assigned Password
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={newPasswordInput}
+                  onChange={(e) => {
+                    setNewPasswordInput(e.target.value);
+                    setPasswordError("");
+                  }}
+                  placeholder="Minimum 6 characters..."
+                  className={`w-full px-3 py-2 bg-transparent border text-xs font-mono transition-all duration-200 rounded-none focus:outline-none ${
+                    isDark
+                      ? "border-[#333333] text-brand-cream focus:border-brand-gold"
+                      : "border-[#D6CFC1] text-brand-charcoal focus:border-brand-maroon"
+                  }`}
+                />
+                {passwordError && (
+                  <p className="text-[10px] font-semibold text-red-500 mt-1">{passwordError}</p>
+                )}
+              </div>
+
+              <div className="p-3 bg-orange-500/10 border border-orange-500/20 text-[10px] opacity-90 leading-relaxed font-sans">
+                ⚠️ <strong>Note:</strong> Resetting password is a rare administrative operation. The retailer will be immediately logged out of their mobile app.
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-inherit">
+                <button
+                  type="button"
+                  onClick={() => setResetModalRetailer(null)}
+                  className={`px-4 py-2 text-xs uppercase font-bold tracking-widest border transition-all duration-150 cursor-pointer ${
+                    isDark
+                      ? "border-[#333333] text-brand-cream hover:bg-[#222222]"
+                      : "border-[#E8E2D5] text-brand-charcoal hover:bg-[#F9F7F2]"
+                  }`}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingPassword}
+                  className="px-4 py-2 text-xs uppercase font-bold tracking-widest border border-orange-600 bg-orange-600 text-white hover:bg-orange-700 transition-all duration-150 cursor-pointer"
+                >
+                  Proceed ➔
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Safety Confirmation Modal */}
       <ConfirmationModal

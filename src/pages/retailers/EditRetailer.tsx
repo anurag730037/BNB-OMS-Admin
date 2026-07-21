@@ -2,8 +2,9 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTheme } from "../../context/ThemeContext";
 import { getAllAreas } from "../../api/area/areas";
-import { getSingleRetailer, updateRetailer } from "../../api/retailers/retailers";
+import { getSingleRetailer, updateRetailer, resetRetailerPassword } from "../../api/retailers/retailers";
 import toast from "react-hot-toast";
+import ConfirmationModal from "../../components/ConfirmationModal";
 
 const EditRetailer: React.FC = () => {
   const { isDark } = useTheme();
@@ -18,6 +19,26 @@ const EditRetailer: React.FC = () => {
 
   const [areasList, setAreasList] = useState<{ _id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Password reset modal & confirmation state
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [newPasswordInput, setNewPasswordInput] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [isSubmittingPassword, setIsSubmittingPassword] = useState(false);
+
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string | React.ReactNode;
+    confirmText?: string;
+    isDanger?: boolean;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+  });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -72,6 +93,56 @@ const EditRetailer: React.FC = () => {
     }
   };
 
+  const handleOpenPasswordModal = () => {
+    setNewPasswordInput("");
+    setPasswordError("");
+    setIsPasswordModalOpen(true);
+  };
+
+  const handlePasswordModalSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPasswordInput || newPasswordInput.length < 6) {
+      setPasswordError("New password must be at least 6 characters long.");
+      return;
+    }
+
+    setIsPasswordModalOpen(false);
+
+    setConfirmModal({
+      isOpen: true,
+      title: "⚠️ Warning: Force Password Reset",
+      message: (
+        <span>
+          Are you sure you want to reset password for{" "}
+          <strong className="text-brand-gold font-bold">{shopName || "this retailer"}</strong>?
+          <span className="block mt-2 font-bold text-red-500">
+            ⚠️ IMPORTANT WARNING: Resetting password will immediately force logout the retailer from their mobile app.
+          </span>
+          They will need to log back in using this newly set password.
+        </span>
+      ),
+      confirmText: "Reset & Logout Retailer",
+      isDanger: true,
+      onConfirm: async () => {
+        setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        if (!id) return;
+        try {
+          setIsSubmittingPassword(true);
+          const res = await resetRetailerPassword(id, newPasswordInput);
+          if (res.success) {
+            toast.success(res.message || "Password reset successfully! Retailer has been logged out.");
+          } else {
+            toast.error(res.message || "Failed to reset password");
+          }
+        } catch (err: any) {
+          toast.error(err.response?.data?.message || "Failed to reset password");
+        } finally {
+          setIsSubmittingPassword(false);
+        }
+      },
+    });
+  };
+
   if (loading) {
     return (
       <div className={`p-8 min-h-screen flex items-center justify-center transition-colors duration-300 ${
@@ -96,16 +167,26 @@ const EditRetailer: React.FC = () => {
             Update retailer network partner details
           </p>
         </div>
-        <button
-          onClick={() => navigate("/retailers")}
-          className={`px-4 py-2 text-xs uppercase font-bold tracking-widest border transition-all duration-200 rounded-none cursor-pointer ${
-            isDark
-              ? "border-[#2A2A2A] text-brand-beige hover:border-brand-cream hover:text-brand-cream"
-              : "border-[#E8E2D5] text-[#7A7263] hover:border-brand-maroon hover:text-brand-maroon"
-          }`}
-        >
-          Back to List
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handleOpenPasswordModal}
+            className="px-3 py-1.5 text-[10px] uppercase font-extrabold tracking-wider border border-orange-500/40 text-orange-500 hover:bg-orange-500 hover:text-white transition-all duration-200 cursor-pointer rounded-none"
+            title="Force reset retailer password (will logout retailer)"
+          >
+            🔑 Reset Password
+          </button>
+          <button
+            onClick={() => navigate("/retailers")}
+            className={`px-4 py-2 text-xs uppercase font-bold tracking-widest border transition-all duration-200 rounded-none cursor-pointer ${
+              isDark
+                ? "border-[#2A2A2A] text-brand-beige hover:border-brand-cream hover:text-brand-cream"
+                : "border-[#E8E2D5] text-[#7A7263] hover:border-brand-maroon hover:text-brand-maroon"
+            }`}
+          >
+            Back to List
+          </button>
+        </div>
       </div>
 
       {/* Form Card */}
@@ -220,6 +301,89 @@ const EditRetailer: React.FC = () => {
           </div>
         </form>
       </div>
+
+      {/* Reset Password Input Modal */}
+      {isPasswordModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm"
+            onClick={() => setIsPasswordModalOpen(false)}
+          />
+          <div className={`relative w-full max-w-md border shadow-2xl p-6 z-10 ${
+            isDark ? "bg-[#181818] border-[#2A2A2A] text-brand-cream" : "bg-white border-[#E8E2D5] text-brand-charcoal"
+          }`}>
+            <div className="absolute top-0 left-0 right-0 h-1 bg-orange-500" />
+            <h3 className="font-sans text-sm font-extrabold uppercase tracking-wider mb-2">
+              🔑 Reset Retailer Password
+            </h3>
+            <p className="text-xs opacity-70 mb-4 font-sans leading-relaxed">
+              Enter a new password for <strong className="text-brand-gold">{shopName}</strong> ({ownerName}).
+            </p>
+
+            <form onSubmit={handlePasswordModalSubmit} className="space-y-4">
+              <div className="space-y-1">
+                <label className="block text-[10px] font-bold uppercase tracking-wider opacity-80">
+                  New Assigned Password
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={newPasswordInput}
+                  onChange={(e) => {
+                    setNewPasswordInput(e.target.value);
+                    setPasswordError("");
+                  }}
+                  placeholder="Minimum 6 characters..."
+                  className={`w-full px-3 py-2 bg-transparent border text-xs font-mono transition-all duration-200 rounded-none focus:outline-none ${
+                    isDark
+                      ? "border-[#333333] text-brand-cream focus:border-brand-gold"
+                      : "border-[#D6CFC1] text-brand-charcoal focus:border-brand-maroon"
+                  }`}
+                />
+                {passwordError && (
+                  <p className="text-[10px] font-semibold text-red-500 mt-1">{passwordError}</p>
+                )}
+              </div>
+
+              <div className="p-3 bg-orange-500/10 border border-orange-500/20 text-[10px] opacity-90 leading-relaxed font-sans">
+                ⚠️ <strong>Note:</strong> Resetting password is a rare administrative operation. The retailer will be immediately logged out of their mobile app.
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-inherit">
+                <button
+                  type="button"
+                  onClick={() => setIsPasswordModalOpen(false)}
+                  className={`px-4 py-2 text-xs uppercase font-bold tracking-widest border transition-all duration-150 cursor-pointer ${
+                    isDark
+                      ? "border-[#333333] text-brand-cream hover:bg-[#222222]"
+                      : "border-[#E8E2D5] text-brand-charcoal hover:bg-[#F9F7F2]"
+                  }`}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingPassword}
+                  className="px-4 py-2 text-xs uppercase font-bold tracking-widest border border-orange-600 bg-orange-600 text-white hover:bg-orange-700 transition-all duration-150 cursor-pointer"
+                >
+                  Proceed ➔
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Warning Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText={confirmModal.confirmText}
+        isDanger={confirmModal.isDanger}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };
