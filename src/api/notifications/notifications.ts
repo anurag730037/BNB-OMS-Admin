@@ -15,6 +15,23 @@ export type NotificationPayload = {
  */
 
 export const sendCustomNotification = async (payload: NotificationPayload) => {
-    const response = await API.post("/notification/send", payload);
+    // Map target to targetType and "retailer" to "single"
+    let targetType: string = payload.target;
+    if (targetType === "retailer") {
+        targetType = "single";
+    }
+
+    const backendPayload = {
+        title: payload.title,
+        body: payload.body,
+        image: payload.imageUrl || "",
+        targetType: targetType,
+        retailerId: payload.retailerId,
+        retailerIds: payload.retailerIds,
+        areaId: payload.areaId,
+        inactiveDays: payload.target === "inactive" ? 7 : undefined // Default to 7 days
+    };
+
+    const response = await API.post("/admin/notifications/send", backendPayload);
     return response.data;
 }
