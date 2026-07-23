@@ -28,10 +28,10 @@ type HistoryItem = {
     failedCount: number;
     status: string;
     createdAt: string;
-    sentBy?: { _id: string; name: string } | null;
+    sentBy?: { _id: string; name: string; email?: string } | null;
     area?: { _id: string; name: string } | null;
-    retailer?: { _id: string; shopName: string } | null;
-    selectedRetailers: { _id: string; shopName: string }[];
+    retailer?: { _id: string; shopName: string; ownerName?: string; phone?: string } | null;
+    selectedRetailers: { _id: string; shopName: string; ownerName?: string; phone?: string }[];
     inactiveDays?: number | null;
 };
 
@@ -55,8 +55,6 @@ const Notifications: React.FC = () => {
     const [retailers, setRetailers] = useState<RetailerItem[]>([]);
     const [retailerSearch, setRetailerSearch] = useState("");
     const [sending, setSending] = useState(false);
-    const [loadingAreas, setLoadingAreas] = useState(false);
-    const [loadingRetailers, setLoadingRetailers] = useState(false);
 
     // =========================================================================
     // Tab 2: HISTORY LOG STATES
@@ -84,16 +82,13 @@ const Notifications: React.FC = () => {
     useEffect(() => {
         if (target === 'area' && areas.length === 0) {
             const fetchAreas = async () => {
-                setLoadingAreas(true);
                 try {
                     const res = await getAllAreas();
                     if (res.success) setAreas(res.areas);
                 } catch (err) {
                     toast.error("Failed to load areas list");
-                } finally {
-                    setLoadingAreas(false);
                 }
-            }
+            };
             fetchAreas();
         }
     }, [target, areas.length]);
@@ -101,16 +96,13 @@ const Notifications: React.FC = () => {
     useEffect(() => {
         if ((target === "retailer" || target === "selected") && retailers.length === 0) {
             const fetchRetailers = async () => {
-                setLoadingRetailers(true);
                 try {
                     const res = await getAllRetailers();
                     if (res.success) setRetailers(res.retailers);
                 } catch (err) {
                     toast.error("Failed to load retailers list");
-                } finally {
-                    setLoadingRetailers(false);
                 }
-            }
+            };
             fetchRetailers();
         }
     }, [target, retailers.length]);
