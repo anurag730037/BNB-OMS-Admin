@@ -17,6 +17,7 @@ import Areas from "./pages/areas/Areas";
 import Support from "./pages/support/Support";
 import { Toaster } from "react-hot-toast";
 import Notifications from "./pages/notifications/Notifications";
+import Banners from "./pages/banners/Banners";
 
 function App() {
   return (
@@ -43,6 +44,7 @@ function App() {
             <Route path="/areas" element={<Areas />} />
             <Route path="/support" element={<Support />} />
             <Route path="/notifications" element={<Notifications />} />
+            <Route path="/banners" element={<Banners />} />
 
           </Route>
         </Route>
