@@ -35,3 +35,21 @@ export const sendCustomNotification = async (payload: NotificationPayload) => {
     const response = await API.post("/admin/notifications/send", backendPayload);
     return response.data;
 }
+
+export type HistoryFilterParams = {
+  search?: string;
+  targetType?: string;
+  startDate?: string;
+  endDate?: string;
+  sentBy?: string;
+  page?: number;
+  limit?: number;
+};
+
+/**
+ * Fetches the paginated history of custom sent notifications
+ */
+export const getNotificationHistory = async (params: HistoryFilterParams) => {
+  const response = await API.get("/admin/notifications", { params });
+  return response.data;
+};
